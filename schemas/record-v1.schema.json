@@ -1,0 +1,600 @@
+{
+  "$defs": {
+    "Kind": {
+      "enum": [
+        "task",
+        "decision",
+        "question",
+        "debugging",
+        "debt",
+        "project",
+        "review"
+      ],
+      "title": "Kind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/Kind"
+    },
+    "title": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Project Id"
+    },
+    "repository": {
+      "default": "",
+      "title": "Repository",
+      "type": "string"
+    },
+    "technologies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Technologies",
+      "type": "array"
+    },
+    "affected_components": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Affected Components",
+      "type": "array"
+    },
+    "related_task_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Related Task Ids",
+      "type": "array"
+    },
+    "status": {
+      "default": "unknown",
+      "title": "Status",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completed At"
+    },
+    "source_agent": {
+      "default": "manual",
+      "enum": [
+        "claude",
+        "codex",
+        "manual",
+        "import"
+      ],
+      "title": "Source Agent",
+      "type": "string"
+    },
+    "source_session": {
+      "default": "",
+      "title": "Source Session",
+      "type": "string"
+    },
+    "verified_facts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Verified Facts",
+      "type": "array"
+    },
+    "inferences": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Inferences",
+      "type": "array"
+    },
+    "unanswered_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unanswered Questions",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "type": "string"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "content_hash": {
+      "default": "",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "branch": {
+      "default": "",
+      "title": "Branch",
+      "type": "string"
+    },
+    "task_id": {
+      "default": "",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "pull_request_id": {
+      "default": "",
+      "title": "Pull Request Id",
+      "type": "string"
+    },
+    "commit_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Commit Ids",
+      "type": "array"
+    },
+    "problem_statement": {
+      "default": "",
+      "title": "Problem Statement",
+      "type": "string"
+    },
+    "requirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Requirements",
+      "type": "array"
+    },
+    "implementation_summary": {
+      "default": "",
+      "title": "Implementation Summary",
+      "type": "string"
+    },
+    "files_changed": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Files Changed",
+      "type": "array"
+    },
+    "tests_performed": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tests Performed",
+      "type": "array"
+    },
+    "technical_decisions": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Technical Decisions",
+      "type": "array"
+    },
+    "debugging_references": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Debugging References",
+      "type": "array"
+    },
+    "lessons_learned": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Lessons Learned",
+      "type": "array"
+    },
+    "mistakes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mistakes",
+      "type": "array"
+    },
+    "improvements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Improvements",
+      "type": "array"
+    },
+    "follow_up_actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Follow Up Actions",
+      "type": "array"
+    },
+    "context": {
+      "default": "",
+      "title": "Context",
+      "type": "string"
+    },
+    "problem": {
+      "default": "",
+      "title": "Problem",
+      "type": "string"
+    },
+    "chosen_approach": {
+      "default": "",
+      "title": "Chosen Approach",
+      "type": "string"
+    },
+    "alternatives": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Alternatives",
+      "type": "array"
+    },
+    "rejected_alternatives": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Rejected Alternatives",
+      "type": "array"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "trade_offs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Trade Offs",
+      "type": "array"
+    },
+    "consequences": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Consequences",
+      "type": "array"
+    },
+    "reversibility": {
+      "default": "unknown",
+      "title": "Reversibility",
+      "type": "string"
+    },
+    "review_date": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Review Date"
+    },
+    "question": {
+      "default": "",
+      "title": "Question",
+      "type": "string"
+    },
+    "expected_answer": {
+      "default": "",
+      "title": "Expected Answer",
+      "type": "string"
+    },
+    "explanation": {
+      "default": "",
+      "title": "Explanation",
+      "type": "string"
+    },
+    "difficulty": {
+      "default": "intermediate",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "technology": {
+      "default": "",
+      "title": "Technology",
+      "type": "string"
+    },
+    "topic": {
+      "default": "",
+      "title": "Topic",
+      "type": "string"
+    },
+    "question_source": {
+      "default": "quiz",
+      "enum": [
+        "quiz",
+        "I asked",
+        "should have asked"
+      ],
+      "title": "Question Source",
+      "type": "string"
+    },
+    "review_schedule": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Review Schedule",
+      "type": "array"
+    },
+    "next_review_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Review At"
+    },
+    "review_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Review Count",
+      "type": "integer"
+    },
+    "correct_count": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Correct Count",
+      "type": "integer"
+    },
+    "confidence_score": {
+      "default": 0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Confidence Score",
+      "type": "number"
+    },
+    "question_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Question Id"
+    },
+    "user_answer": {
+      "default": "",
+      "title": "User Answer",
+      "type": "string"
+    },
+    "score": {
+      "default": 0,
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Score",
+      "type": "number"
+    },
+    "feedback": {
+      "default": "",
+      "title": "Feedback",
+      "type": "string"
+    },
+    "evaluator": {
+      "default": "human",
+      "enum": [
+        "human",
+        "agent"
+      ],
+      "title": "Evaluator",
+      "type": "string"
+    },
+    "symptoms": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Symptoms",
+      "type": "array"
+    },
+    "environment": {
+      "default": "",
+      "title": "Environment",
+      "type": "string"
+    },
+    "error_messages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Error Messages",
+      "type": "array"
+    },
+    "investigation_timeline": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Investigation Timeline",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "incorrect_assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Incorrect Assumptions",
+      "type": "array"
+    },
+    "failed_approaches": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Failed Approaches",
+      "type": "array"
+    },
+    "root_cause": {
+      "default": "",
+      "title": "Root Cause",
+      "type": "string"
+    },
+    "resolution": {
+      "default": "",
+      "title": "Resolution",
+      "type": "string"
+    },
+    "prevention_strategy": {
+      "default": "",
+      "title": "Prevention Strategy",
+      "type": "string"
+    },
+    "monitoring_recommendations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Monitoring Recommendations",
+      "type": "array"
+    },
+    "category": {
+      "default": "",
+      "title": "Category",
+      "type": "string"
+    },
+    "priority": {
+      "default": "medium",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Priority",
+      "type": "string"
+    },
+    "severity": {
+      "default": "",
+      "title": "Severity",
+      "type": "string"
+    },
+    "impact": {
+      "default": "",
+      "title": "Impact",
+      "type": "string"
+    },
+    "workaround": {
+      "default": "",
+      "title": "Workaround",
+      "type": "string"
+    },
+    "proposed_solution": {
+      "default": "",
+      "title": "Proposed Solution",
+      "type": "string"
+    },
+    "owner": {
+      "default": "",
+      "title": "Owner",
+      "type": "string"
+    },
+    "target_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Date"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "services": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Services",
+      "type": "array"
+    },
+    "dependencies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "architecture_summary": {
+      "default": "",
+      "title": "Architecture Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "title"
+  ],
+  "title": "Record",
+  "type": "object"
+}
