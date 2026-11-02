@@ -62,6 +62,11 @@ ekm provider switch microsoft --approve
 ekm provider switch google --approve
 ```
 
+If no browser window opens, retry `ekm auth google login --no-browser`. Open the
+displayed Google authorization link on this machine; the localhost callback still
+completes the PKCE flow. This is an authorization request link, not an access token.
+Do not share a callback URL containing an authorization code.
+
 The explicit login name adds/activates an isolated Google profile after preview
 and approval. Existing Microsoft profiles are never silently repurposed. If more
 than one account exists for a provider, select it explicitly, for example

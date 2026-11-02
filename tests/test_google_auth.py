@@ -112,6 +112,16 @@ def test_google_pkce_signin_encrypts_tokens_and_pins_verified_subject(services, 
     assert auth.access_token() == "never-print-access-token"
 
 
+def test_manual_browser_flow_displays_authorization_request_without_tokens(services, capsys):
+    auth, _, _, calls, _ = services
+    assert auth.login(open_browser=False)["authenticated"]
+    callback = next(data for name, data in calls if name == "callback")
+    assert callback["open_browser"] is False
+    assert "{url}" in callback["authorization_prompt_message"]
+    assert callback["host"] == "localhost" and callback["port"] == 0
+    assert "never-print" not in capsys.readouterr().out
+
+
 def test_google_refresh_persists_and_status_never_displays_tokens(services):
     auth, creds, cache, _, _ = services
     auth.login()

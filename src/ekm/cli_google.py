@@ -22,6 +22,11 @@ def add_google_commands(commands, auth_actions) -> None:
     login.add_argument("--name")
     login.add_argument("--env-file", type=Path)
     login.add_argument("--approve", action="store_true")
+    login.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="show the Google authorization link for manual opening",
+    )
     actions.add_parser("status")
     actions.add_parser("logout")
     provider = commands.add_parser("provider", help="select a destination without moving records")
@@ -126,7 +131,8 @@ def _auth(config: Config, args) -> None:
 
     if args.google_auth_action == "login":
         profile = _login_profile(config, args)
-        emit(_session(config, profile).login())
+        session = _session(config, profile)
+        emit(session.login(open_browser=False) if args.no_browser else session.login())
     elif config.active_name() is None and args.profile is None:
         emit(
             {

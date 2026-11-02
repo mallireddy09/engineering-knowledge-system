@@ -65,7 +65,7 @@ Microsoft operations were used during implementation. See
 
 ## Optional live smoke test
 
-The Google extension adds **247 passing tests in the full suite, 3 optional live
+The Google extension adds **248 passing tests in the full suite, 3 optional live
 tests skipped, and 88% coverage** at local validation. All original 166 tests
 remain present and pass. Ruff lint/format, both agent skill installation checks,
 and wheel/source package builds pass. Google account access remains unverified

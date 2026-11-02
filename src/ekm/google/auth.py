@@ -197,7 +197,7 @@ class GoogleAuth:
             ) from error
 
     @_suppress_oauth_diagnostics()
-    def login(self) -> dict:
+    def login(self, *, open_browser: bool = True) -> dict:
         with self.lock:
             try:
                 flow = InstalledAppFlow.from_client_config(
@@ -206,9 +206,13 @@ class GoogleAuth:
                 credentials = flow.run_local_server(
                     host="localhost",
                     port=0,
-                    open_browser=True,
+                    open_browser=open_browser,
                     timeout_seconds=180,
-                    authorization_prompt_message="Opening Google sign-in in your browser...",
+                    authorization_prompt_message=(
+                        "Opening Google sign-in in your browser..."
+                        if open_browser
+                        else "Open this Google sign-in link in your browser:\n{url}"
+                    ),
                     success_message="Google sign-in completed. You may close this window.",
                     access_type="offline",
                     prompt="consent",
