@@ -22,7 +22,15 @@ live personal-account compatibility or tenant-specific permission approval.
 | Export and recovery | JSON bundle, backup, restore, explicit destination | CLI backup/restore tests; stable ID recovery |
 | Optional GitHub metadata | Read-only `gh api` issue/PR metadata | Input validation/local Git tests; current repo publishing is separate |
 | Reliability and privacy | Redaction, digest approval, audit metadata, read retries | Quoted credential regressions, hostile transfer URL, no write retries |
-| Cross-platform packaging | Python >=3.11, locked dependencies, CI matrix | Local installed CLI; Linux/Windows/macOS CI configured, not yet executed |
+| Cross-platform packaging | Python >=3.11, locked dependencies, CI matrix | Installed CLI and package builds pass; all six Linux/Windows/macOS jobs pass on Python 3.11/3.13 |
+
+Verified source revision: `1dea1f03bbdbc8b6876f7da0202c87361f91ad52`.
+Local `pytest --cov=ekm --cov-report=term -q`: **89 passed, 1 optional live test
+skipped, 89% coverage**. `ruff check src tests scripts`,
+`ruff format --check src tests scripts`, and both skill installation checks pass.
+`uv build` produces the source archive and wheel successfully.
+The [six-job CI run](https://github.com/mallireddy09/engineering-knowledge-system/actions/runs/41411306118)
+passed with locked dependency installation, tests, lint, format and skill checks.
 
 ## Explicit limits
 
