@@ -192,6 +192,10 @@ to merge arbitrary custom sheets, formulas or charts. Export/upload a new filena
 instead. Download destinations are new files and never overwrite existing local
 workbooks.
 
+Local files request owner-only POSIX permissions where supported. Windows uses
+the destination directory's inherited ACLs; keep exports and backups in a private
+user directory. Token persistence independently uses OS-backed encryption.
+
 Creation provenance is local to the profile. Identical-content collision retries
 do not claim an untracked existing file as EKM-created. If the local provenance
 ledger is missing or an upload succeeded before its local acknowledgement failed,

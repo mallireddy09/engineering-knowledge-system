@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from uuid import uuid4
 
 import httpx
@@ -284,7 +285,8 @@ def test_path_safe_client_download_backup_and_metadata_queue(personal, tmp_path)
     output = tmp_path / "backup.json"
     result = provider.download_document("backups", "backup.json", output)
     assert result["content_hash"] == hashlib.sha256(output.read_bytes()).hexdigest()
-    assert output.stat().st_mode & 0o777 == 0o600
+    if os.name != "nt":
+        assert output.stat().st_mode & 0o777 == 0o600
     assert json.loads(output.read_text())["records"][0]["id"] == str(record.id)
     with pytest.raises(FileExistsError):
         provider.download_document("backups", "backup.json", output)
