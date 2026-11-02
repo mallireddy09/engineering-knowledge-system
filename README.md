@@ -8,7 +8,7 @@ review questions; and generate Word, Excel, Google Docs and Google Sheets report
 
 ## Install
 
-Requires Python 3.11+, Git, and access to this private GitHub repository.
+Requires Python 3.11+, Git, and access to this GitHub repository.
 Install the shared CLI once:
 
 ```bash
