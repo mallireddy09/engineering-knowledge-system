@@ -1,0 +1,9 @@
+{
+  "name": "ekm",
+  "version": "0.1.0",
+  "description": "Capture engineering lessons, decisions and debugging knowledge through the shared EKM CLI.",
+  "author": {"name": "Mallikarjun Reddy"},
+  "repository": "https://github.com/mallireddy09/engineering-knowledge-system",
+  "license": "MIT",
+  "skills": "./skills/"
+}

@@ -20,6 +20,26 @@ def test_each_agent_gets_complete_canonical_skill(tmp_path, agent):
     assert INSTALLER.install(tmp_path, check=True)
 
 
+@pytest.mark.parametrize(
+    "agent,directory", [("claude", ".claude"), ("codex", ".agents"), ("cursor", ".cursor")]
+)
+def test_install_only_the_selected_agent(tmp_path, agent, directory):
+    destinations = INSTALLER.install(tmp_path, agent=agent)
+    assert destinations == [tmp_path / directory / "skills" / "engineering-journal"]
+    assert INSTALLER._files(destinations[0]) == INSTALLER._files(INSTALLER.SOURCE)
+    assert {p.name for p in tmp_path.iterdir()} == {directory}
+    assert INSTALLER.install(tmp_path, agent=agent, check=True) == destinations
+
+
+def test_all_agents_and_invalid_selection(tmp_path):
+    with pytest.raises(ValueError, match="Unknown agent"):
+        INSTALLER.install(tmp_path, agent="missing")
+    assert not list(tmp_path.iterdir())
+    destinations = INSTALLER.install(tmp_path, agent="all")
+    assert len(destinations) == 3
+    assert INSTALLER.install(tmp_path, agent="all", check=True) == destinations
+
+
 def test_installation_is_idempotent_and_detects_local_edits(tmp_path):
     destinations = INSTALLER.install(tmp_path)
     first = destinations[0] / "SKILL.md"

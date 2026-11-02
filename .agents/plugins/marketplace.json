@@ -1,0 +1,4 @@
+{
+  "name": "ekm",
+  "plugins": [{"name": "ekm", "source": {"source": "local", "path": "./plugins/ekm"}, "category": "Productivity"}]
+}

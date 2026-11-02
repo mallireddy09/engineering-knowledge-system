@@ -1,0 +1,6 @@
+{
+  "name": "ekm",
+  "owner": {"name": "Mallikarjun Reddy"},
+  "metadata": {"description": "The EKM engineering journal skill for coding agents."},
+  "plugins": [{"name": "ekm", "source": "./plugins/ekm", "description": "Shared engineering journal skill for the EKM CLI."}]
+}
