@@ -65,12 +65,19 @@ Microsoft operations were used during implementation. See
 
 ## Optional live smoke test
 
-The Google extension adds **248 passing tests in the full suite, 3 optional live
+The Google extension adds **250 passing tests in the full suite, 3 optional live
 tests skipped, and 88% coverage** at local validation. All original 166 tests
 remain present and pass. Ruff lint/format, both agent skill installation checks,
 and wheel/source package builds pass. Google account access remains unverified
 until the user supplies Desktop OAuth credentials and completes browser consent.
 See [Google setup and implementation files](google-workspace.md).
+
+Live Google sign-in, encrypted-session retrieval, Drive connectivity and owned
+folder initialization have subsequently been verified for the configured local
+account. Root handling uses Drive's documented `root` alias without requiring
+access to My Drive root metadata, preserving the narrow `drive.file` scope.
+These operational checks do not establish live JSON CRUD or native Docs/Sheets
+generation; those remain separate from the mocked API coverage.
 
 Initialize a dedicated **test** Microsoft profile explicitly before this test.
 The default optional test only checks access and lists existing records. Set

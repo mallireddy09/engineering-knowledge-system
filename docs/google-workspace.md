@@ -93,6 +93,10 @@ ambiguous duplicate folders are rejected.
 With `drive.file`, the app cannot enumerate every unrelated pre-existing file.
 An invisible same-named folder is never claimed or overwritten; EKM locates its
 own tagged root and pins that Drive ID. Names alone never establish ownership.
+My Drive's `root` alias is used for app-folder discovery and creation; EKM does
+not need permission to fetch the user's root-folder metadata. Root membership is
+verified using scoped parent queries, including when Google returns a canonical
+parent ID instead of the alias. See [Google's folder guide](https://developers.google.com/workspace/drive/api/guides/folder).
 
 Use the same shared commands:
 

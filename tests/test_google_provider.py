@@ -33,6 +33,8 @@ class Drive:
         self.fail_after_create = False
         self.calls = []
         self.page_size = 2
+        self.root_metadata_visible = True
+        self.root_parent_id = "root"
 
     def handler(self, request):
         self.calls.append(request)
@@ -45,6 +47,8 @@ class Drive:
         if path.endswith("/files") and request.method == "GET":
             query = request.url.params["q"]
             parent = re.search(r"'([^']+)' in parents", query).group(1)
+            if parent == "root":
+                parent = self.root_parent_id
             props = re.findall(r"key='([^']+)' and value='([^']+)'", query)
             matches = [
                 item
@@ -75,6 +79,8 @@ class Drive:
             else:
                 metadata = json.loads(request.content)
             id = metadata["id"]
+            if metadata.get("parents") == ["root"]:
+                metadata["parents"] = [self.root_parent_id]
             if id in self.items:
                 return httpx.Response(409)
             self.items[id] = {**metadata, "version": "1", "trashed": False}
@@ -85,6 +91,8 @@ class Drive:
                 raise httpx.ReadError("lost result", request=request)
             return httpx.Response(201, json=self.items[id])
         id = path.rsplit("/", 1)[-1]
+        if id == "root" and not self.root_metadata_visible:
+            return httpx.Response(404)
         if id not in self.items:
             return httpx.Response(404)
         if request.url.params.get("alt") == "media":
@@ -126,6 +134,37 @@ def test_folder_initialization_reuse_owned_scope_and_permissions(provider, tmp_p
         storage.create_record(Record(kind=Kind.task, title="Need approval"))
     if os.name != "nt":
         assert (tmp_path / "google-drive-operations.json").stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize("lost_create_response", [False, True])
+def test_drive_file_scope_initializes_without_reading_my_drive_root(tmp_path, lost_create_response):
+    drive = Drive()
+    drive.root_metadata_visible = False
+    drive.root_parent_id = "actual_my_drive_root"
+    client = GoogleClient(
+        lambda: "token", httpx.Client(transport=httpx.MockTransport(drive.handler))
+    )
+    storage = GoogleDriveProvider(
+        client, app_id="desktop-client", account_id="subject", state_dir=tmp_path
+    )
+    if lost_create_response:
+        drive.fail_after_create = True
+        with pytest.raises(StorageError):
+            storage.initialize_storage(approved=True)
+    storage.initialize_storage(approved=True)
+    assert drive.items[storage.root_id]["parents"] == ["actual_my_drive_root"]
+    count = len(drive.items)
+    storage.initialize_storage(approved=True)
+    assert len(drive.items) == count
+    record = Record(kind=Kind.task, title="Narrow Google scope").sealed()
+    stored = storage.create_record(record, approved=True)
+    assert storage.get_record(record.kind, record.id) == stored
+    assert not any(
+        call.method == "GET" and call.url.path.endswith("/files/root") for call in drive.calls
+    )
+    drive.items[storage.root_id]["parents"] = ["other_folder"]
+    with pytest.raises(StorageError, match="moved"):
+        storage.list_records()
 
 
 def test_record_create_update_tombstone_recovery_and_export(provider, tmp_path):

@@ -75,10 +75,9 @@ class GoogleDriveProvider(StorageProvider):
         return result
 
     def _root_parent(self) -> str:
-        root = self.client.file_metadata("root")
-        if root.get("mimeType") != FOLDER_MIME or root.get("trashed"):
-            raise StorageError("Google My Drive root is unavailable.")
-        return _id(root["id"])
+        # drive.file can create/list app files under this documented alias even
+        # when the user's My Drive root metadata itself is outside the grant.
+        return "root"
 
     def verify_file(self, id: str, role: str, parent_id: str | None = None) -> dict:
         item = self.client.file_metadata(_id(id))
@@ -95,7 +94,19 @@ class GoogleDriveProvider(StorageProvider):
             raise StorageError(
                 "Google file ownership, type or identity does not match this profile."
             )
-        if parent_id is not None and item.get("parents") != [_id(parent_id)]:
+        if parent_id == "root":
+            # Google returns the real parent ID, not the root alias. Verify
+            # membership with a scoped query rather than reading root metadata
+            # or trusting an arbitrary returned parent ID.
+            query = "trashed = false and 'root' in parents"
+            for key, value in self.owner_properties(role).items():
+                escaped = value.replace("\\", "\\\\").replace("'", "\\'")
+                query += f" and appProperties has {{ key='{key}' and value='{escaped}' }}"
+            if not any(
+                entry.get("id") == id for entry in self.client.iter_files(query, fields=FIELDS)
+            ):
+                raise StorageError("Google file has moved outside its approved EKM folder.")
+        elif parent_id is not None and item.get("parents") != [_id(parent_id)]:
             raise StorageError("Google file has moved outside its approved EKM folder.")
         return item
 
@@ -171,9 +182,13 @@ class GoogleDriveProvider(StorageProvider):
                 return self.client.upload_file(body, content, mime_type)
             except ConflictError:
                 item = self.client.file_metadata(id)
+                parents_match = item.get("parents") == metadata["parents"]
+                if metadata["parents"] == ["root"]:
+                    self.verify_file(id, metadata["appProperties"]["ekmRole"], "root")
+                    parents_match = True
                 if (
                     item.get("appProperties") != metadata["appProperties"]
-                    or item.get("parents") != metadata["parents"]
+                    or not parents_match
                     or item.get("mimeType") != metadata["mimeType"]
                     or item.get("trashed")
                 ):
