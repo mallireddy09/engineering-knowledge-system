@@ -1,4 +1,5 @@
 import json
+import logging
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -6,6 +7,41 @@ import pytest
 
 from ekm.microsoft.auth import CONSUMER_TENANT, MicrosoftAuth
 from ekm.providers.base import StorageError
+
+
+def test_microsoft_oauth_diagnostics_are_scoped(tmp_path, identity, caplog):
+    _, result, app = identity
+    sdk = logging.getLogger("msal.oauth2cli.authcode")
+
+    def interactive(**kwargs):
+        sdk.debug("Got auth response: %s", {"code": "dummy-sensitive-code"})
+        logging.getLogger("ekm.test").info("application message")
+        return result
+
+    app.acquire_token_interactive = interactive
+    auth = MicrosoftAuth(tmp_path, str(uuid4()), "personal")
+    previous = logging.getLogRecordFactory()
+    with caplog.at_level(logging.DEBUG):
+        auth.login(flow="interactive")
+        assert logging.getLogRecordFactory() is previous
+        sdk.debug("after operation")
+    assert "dummy-sensitive-code" not in caplog.text
+    assert "application message" in caplog.text
+    assert "after operation" in caplog.text
+
+
+def test_microsoft_oauth_diagnostics_restored_after_failure(tmp_path, identity):
+    _, _, app = identity
+
+    def failed(**kwargs):
+        raise RuntimeError("unavailable")
+
+    app.acquire_token_interactive = failed
+    auth = MicrosoftAuth(tmp_path, str(uuid4()), "personal")
+    previous = logging.getLogRecordFactory()
+    with pytest.raises(StorageError):
+        auth.login(flow="interactive")
+    assert logging.getLogRecordFactory() is previous
 
 
 @pytest.fixture

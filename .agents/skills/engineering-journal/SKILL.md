@@ -5,8 +5,8 @@ description: Capture approved engineering lessons, decisions, debugging investig
 
 # Engineering journal
 
-Use the shared `ekm` Python CLI. Both Claude Code and Codex use this workflow;
-neither agent requires hooks or access to the other's session history. Check
+Use the shared `ekm` Python CLI. Claude Code, Codex, and Cursor use this workflow;
+no agent requires hooks or access to another agent's session history. Check
 `ekm --help` for installed commands and `ekm account status` for the selected
 destination. If EKM is unavailable, explain setup rather than inventing a save.
 

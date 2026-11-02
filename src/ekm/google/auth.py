@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import os
 import tempfile
-from contextlib import contextmanager
 from datetime import timezone
 from pathlib import Path
-from threading import RLock
 
 import httpx
 from filelock import FileLock
@@ -23,43 +20,14 @@ from msal_extensions.persistence import PersistenceNotFound
 
 from ekm.google.settings import TOKEN_URI, load_client_config
 from ekm.providers.base import StorageError
+from ekm.security import suppress_oauth_diagnostics
 
 SCOPES = (
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/drive.file",
 )
-_DIAGNOSTIC_LOCK = RLock()
 _OAUTH_LOGGERS = ("oauthlib", "requests_oauthlib", "google_auth_oauthlib", "google.auth")
-
-
-@contextmanager
-def _suppress_oauth_diagnostics():
-    """Redact SDK callback/code/token diagnostics only during sensitive operations.
-
-    SDK children can emit the localhost callback query or token-exchange bodies at
-    INFO/DEBUG. The scoped factory catches children created during the operation;
-    unrelated application records and the previous logging configuration survive.
-    """
-    with _DIAGNOSTIC_LOCK:
-        previous = logging.getLogRecordFactory()
-
-        def factory(*args, **kwargs):
-            record = previous(*args, **kwargs)
-            if any(
-                record.name == prefix or record.name.startswith(prefix + ".")
-                for prefix in _OAUTH_LOGGERS
-            ):
-                record.msg = "Google OAuth SDK diagnostic suppressed"
-                record.args = ()
-                record.exc_info = record.exc_text = record.stack_info = None
-            return record
-
-        logging.setLogRecordFactory(factory)
-        try:
-            yield
-        finally:
-            logging.setLogRecordFactory(previous)
 
 
 class GoogleAuth:
@@ -196,7 +164,7 @@ class GoogleAuth:
                 "Google encrypted session is invalid; sign in again to this profile."
             ) from error
 
-    @_suppress_oauth_diagnostics()
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Google")
     def login(self, *, open_browser: bool = True) -> dict:
         with self.lock:
             try:
@@ -276,12 +244,12 @@ class GoogleAuth:
                 "Google session expired, was revoked, or could not refresh. Check connectivity and run ekm auth google login."
             ) from error
 
-    @_suppress_oauth_diagnostics()
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Google")
     def access_token(self) -> str:
         with self.lock:
             return self._credentials().token
 
-    @_suppress_oauth_diagnostics()
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Google")
     def status(self) -> dict:
         with self.lock:
             try:

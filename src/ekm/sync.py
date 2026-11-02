@@ -146,17 +146,7 @@ class Synchronizer:
             # Publish the validated snapshot atomically. Preserve prior committed cache rows
             # with pending local work, even when the corresponding remote record was removed.
             with self.db:
-                protected = {
-                    r[0]
-                    for r in self.db.execute(
-                        "SELECT id FROM pending UNION SELECT id FROM pending_deletes"
-                    )
-                }
-                rows = self.db.execute("SELECT id FROM records").fetchall()
-                for (record_id,) in rows:
-                    if record_id not in protected:
-                        self.db.execute("DELETE FROM records WHERE id=?", (record_id,))
-                        self.db.execute("DELETE FROM search WHERE id=?", (record_id,))
+                self.engine._prune_cache()
                 for payload, etag in self.db.execute(
                     "SELECT payload,etag FROM downloads"
                 ).fetchall():

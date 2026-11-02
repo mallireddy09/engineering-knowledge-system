@@ -1,3 +1,5 @@
+import os
+import stat
 from datetime import datetime, timezone
 from uuid import uuid4
 from zipfile import ZipFile
@@ -67,6 +69,17 @@ def test_exports_refuse_to_overwrite_unrelated_file(tmp_path, records, export, e
     with pytest.raises(FileExistsError):
         export(records, path)
     assert path.read_bytes() == b"precious user data"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX permissions")
+@pytest.mark.parametrize("export,extension", [(write_word, "docx"), (write_excel, "xlsx")])
+def test_exports_are_owner_only_with_permissive_umask(tmp_path, records, export, extension):
+    previous = os.umask(0)
+    try:
+        path = export(records, tmp_path / f"private.{extension}")
+    finally:
+        os.umask(previous)
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 
 def test_excel_has_requested_sheets_tables_charts_and_formulas(tmp_path, records):

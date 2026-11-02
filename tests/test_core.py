@@ -113,6 +113,19 @@ def test_refresh_failure_preserves_prior_index(engine, monkeypatch):
     assert len(engine.search("Kafka")) == 1
 
 
+@pytest.mark.parametrize("operation", ["refresh", "pull"])
+def test_full_listing_preserves_cache_for_pending_work(engine, operation):
+    removed = engine.save(task(engine, title="Prune", task_id="APP-2"), approved=True)
+    protected = engine.save(task(engine), approved=True)
+    engine.save(protected.record, etag=protected.etag, approved=True, offline=True)
+    for stored in (removed, protected):
+        engine.provider.delete_record(Kind.task, stored.record.id, stored.etag, approved=True)
+    getattr(engine, operation)()
+    assert [r.id for r in engine.records()] == [protected.record.id]
+    assert [r["record"]["id"] for r in engine.search("Kafka")] == [str(protected.record.id)]
+    assert len(engine.pending()) == 1
+
+
 def test_refresh_cache_failure_rolls_back_all_rows(engine, monkeypatch):
     engine.save(task(engine), approved=True)
     cache_rows = engine._cache_rows

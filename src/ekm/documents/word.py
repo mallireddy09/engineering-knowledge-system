@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -213,7 +214,8 @@ def write_word(records: list[Record], path: Path) -> Path:
     document.core_properties.author = "EKM"
     path.parent.mkdir(parents=True, exist_ok=True)
     # Exclusive creation avoids a check-then-save race and protects unrelated user data.
-    with path.open("xb") as output:
+    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    with os.fdopen(descriptor, "wb") as output:
         try:
             document.save(output)
         except Exception:

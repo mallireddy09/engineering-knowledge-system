@@ -43,7 +43,7 @@ class Record(BaseModel):
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
     completed_at: datetime | None = None
-    source_agent: Literal["claude", "codex", "manual", "import"] = "manual"
+    source_agent: Literal["claude", "codex", "cursor", "manual", "import"] = "manual"
     source_session: str = ""
     verified_facts: list[str] = Field(default_factory=list)
     inferences: list[str] = Field(default_factory=list)

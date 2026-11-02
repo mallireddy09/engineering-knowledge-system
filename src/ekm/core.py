@@ -131,6 +131,12 @@ class Engine:
         with self.db:
             self._cache_rows(stored)
 
+    def _prune_cache(self) -> None:
+        """Remove committed rows without pending work inside the caller's transaction."""
+        protected = "SELECT id FROM pending UNION SELECT id FROM pending_deletes"
+        self.db.execute(f"DELETE FROM records WHERE id NOT IN ({protected})")
+        self.db.execute(f"DELETE FROM search WHERE id NOT IN ({protected})")
+
     @staticmethod
     def _text(record: Record) -> str:
         data = record.model_dump(mode="json", exclude_defaults=True)
@@ -340,8 +346,7 @@ class Engine:
         with self.lock:
             records = self.provider.list_records()
             with self.db:
-                self.db.execute("DELETE FROM records")
-                self.db.execute("DELETE FROM search")
+                self._prune_cache()
                 for stored in records:
                     self._cache_rows(stored)
                 self.db.execute(

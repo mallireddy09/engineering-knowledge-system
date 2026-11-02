@@ -7,6 +7,16 @@ from ekm.models import Record, migrate_record
 from ekm.security import redact
 
 
+def test_cursor_source_round_trips_through_published_schema():
+    import json
+    from pathlib import Path
+
+    record = Record(kind="task", title="Cursor session", source_agent="cursor").sealed()
+    assert migrate_record(record.model_dump(mode="json")) == record
+    schema = json.loads((Path(__file__).parents[1] / "schemas/record-v1.schema.json").read_text())
+    assert schema == Record.model_json_schema()
+
+
 def test_schema_round_trip_utc_uuid_and_hash():
     record = Record(kind="task", title="Mechanism", created_at="2026-01-01T12:00:00+03:00").sealed()
     assert record.created_at.hour == 9 and record.created_at.tzinfo == timezone.utc

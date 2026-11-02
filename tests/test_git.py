@@ -1,6 +1,25 @@
 import subprocess
 
+import pytest
+
+from ekm.cli import main
 from ekm.integrations.git import git_context
+
+
+@pytest.mark.parametrize("command", [["github", "owner/repo", "issues", "1"], ["log"]])
+def test_subprocess_timeout_returns_safe_cli_error(tmp_path, monkeypatch, capsys, command):
+    monkeypatch.setenv("EKM_HOME", str(tmp_path / "home"))
+    assert main(["account", "add", "demo", "--type", "mock"]) == 0
+    assert main(["account", "switch", "demo", "--approve"]) == 0
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 10, output="sensitive subprocess output")
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    assert main(command) == 1
+    error = capsys.readouterr().err
+    assert "timed out" in error
+    assert "sensitive subprocess output" not in error
 
 
 def test_metadata_preserves_modified_and_renamed_paths(tmp_path):

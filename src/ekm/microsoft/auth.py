@@ -13,11 +13,15 @@ from filelock import FileLock
 from msal_extensions import PersistedTokenCache, build_encrypted_persistence
 
 from ekm.providers.base import StorageError
+from ekm.security import suppress_oauth_diagnostics
+
+_OAUTH_LOGGERS = ("msal", "msal_extensions")
 
 CONSUMER_TENANT = "9188040d-6c67-4c5b-b112-36a304b66dad"
 
 
 class MicrosoftAuth:
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Microsoft")
     def __init__(
         self,
         profile_dir: Path,
@@ -199,6 +203,7 @@ class MicrosoftAuth:
         finally:
             Path(name).unlink(missing_ok=True)
 
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Microsoft")
     def login(self, flow: str = "device") -> dict:
         if flow not in {"device", "interactive"}:
             raise StorageError("Choose interactive browser sign-in or device sign-in.")
@@ -306,6 +311,7 @@ class MicrosoftAuth:
             "token_expired": expires_at <= now if expires_at else None,
         }
 
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Microsoft")
     def status(self) -> dict:
         """Inspect or silently refresh this bound session; never open a sign-in window."""
         state = {
@@ -331,12 +337,14 @@ class MicrosoftAuth:
                 "message": "Microsoft session is available.",
             }
 
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Microsoft")
     def access_token(self) -> str:
         with self._binding_lock:
             account = self._bound_account()
             result = self._silent(account)
             return result["access_token"]
 
+    @suppress_oauth_diagnostics(_OAUTH_LOGGERS, "Microsoft")
     def logout(self) -> None:
         with self._binding_lock:
             # Preserve binding: signing out must never re-purpose an existing company's cache.

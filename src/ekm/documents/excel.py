@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections import Counter
 from datetime import datetime, timezone
@@ -252,7 +253,8 @@ def write_excel(records: list[Record], path: Path) -> Path:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="183B4E")
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("xb") as output:
+    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    with os.fdopen(descriptor, "wb") as output:
         try:
             book.save(output)
         except Exception:

@@ -4,11 +4,18 @@ import json
 import subprocess
 from pathlib import Path
 
+from ekm.providers.base import StorageError
+
 
 def _git(root: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=10, check=False
-    )
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=10, check=False
+        )
+    except subprocess.TimeoutExpired as error:
+        raise StorageError(
+            "Git metadata command timed out; retry when the repository responds."
+        ) from error
     if result.returncode:
         raise ValueError("Git metadata unavailable; select a Git working tree")
     return result.stdout.rstrip("\n")
@@ -54,13 +61,18 @@ def github_metadata(repo: str, kind: str, number: int) -> dict:
         raise ValueError("provide an owner/repository and positive issue or PR number")
     if kind not in {"issues", "pulls"}:
         raise ValueError("GitHub metadata kind must be issues or pulls")
-    result = subprocess.run(
-        ["gh", "api", f"repos/{repo}/{kind}/{number}"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            ["gh", "api", f"repos/{repo}/{kind}/{number}"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise StorageError(
+            "GitHub metadata command timed out; check connectivity and retry."
+        ) from error
     if result.returncode:
         raise ValueError(
             "GitHub metadata unavailable; check gh authentication and repository access"

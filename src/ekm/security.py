@@ -1,7 +1,34 @@
-"""Conservative redaction; reviewed drafts remain necessary for confidential material."""
+"""Payload redaction and scoped suppression of sensitive OAuth SDK diagnostics."""
 
+import logging
 import re
+from contextlib import contextmanager
+from threading import RLock
 from typing import Any
+
+_DIAGNOSTIC_LOCK = RLock()
+
+
+@contextmanager
+def suppress_oauth_diagnostics(prefixes: tuple[str, ...], provider: str):
+    """Suppress sensitive SDK records during OAuth, preserving unrelated logging."""
+    with _DIAGNOSTIC_LOCK:
+        previous = logging.getLogRecordFactory()
+
+        def factory(*args, **kwargs):
+            record = previous(*args, **kwargs)
+            if any(record.name == p or record.name.startswith(p + ".") for p in prefixes):
+                record.msg = f"{provider} OAuth SDK diagnostic suppressed"
+                record.args = ()
+                record.exc_info = record.exc_text = record.stack_info = None
+            return record
+
+        logging.setLogRecordFactory(factory)
+        try:
+            yield
+        finally:
+            logging.setLogRecordFactory(previous)
+
 
 PATTERNS = [
     re.compile(r"(?i)\b(?:gh[pousr]_[A-Za-z0-9_]{10,}|github_pat_[A-Za-z0-9_]+)"),
