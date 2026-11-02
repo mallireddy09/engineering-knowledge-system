@@ -1,5 +1,10 @@
 # Microsoft account setup
 
+For this phase's personal-account setup using your **existing** application and
+the top-level `EngineeringKnowledge` folder, follow the
+[personal OneDrive guide](personal-onedrive.md). The AppFolder instructions below
+describe the original storage option; existing profiles are not migrated silently.
+
 EKM uses delegated public-client OAuth. It never needs a client secret. Mock storage
 is the default development path; ordinary tests neither sign in nor write to Microsoft.
 Live Microsoft behavior has not been validated by mocked tests. Use a dedicated test

@@ -84,6 +84,24 @@ vector database is required. Similarity search uses terms rather than embeddings
 
 ## Microsoft and agent setup
 
+For a personal Microsoft account, use the ignored `.env` file in this checkout:
+paste your existing public Application (Client) ID into `MICROSOFT_CLIENT_ID`,
+then run:
+
+```bash
+ekm auth login --name personal --approve
+ekm auth status
+ekm onedrive initialize --approve
+ekm onedrive test --approve
+```
+
+See the [personal OneDrive guide](docs/personal-onedrive.md) for the existing-app
+localhost/PKCE configuration, delegated permissions, Word/Excel uploads and safe
+updates, remote backups, and explicit `sync status/pull/push/resolve` commands.
+New personal profiles use `OneDrive/EngineeringKnowledge`; existing AppFolder
+profiles retain their original location. Sign-in and the temporary file test run
+only when explicitly invoked; normal tests never access your live OneDrive.
+
 Follow [Microsoft setup](docs/microsoft-setup.md) to register a public-client app,
 choose delegated permissions, configure a tenant/site, and initialize remote
 storage. Provisioning a SharePoint site can require a separate administrator

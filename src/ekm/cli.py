@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sqlite3
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -15,7 +16,7 @@ from pydantic import ValidationError
 from ekm import __version__
 from ekm.config import Config, Profile
 from ekm.core import Engine
-from ekm.models import Kind, Record, utcnow
+from ekm.models import Kind, Record, utcnow, verify_integrity
 from ekm.providers.base import StorageError
 from ekm.security import redact
 
@@ -84,7 +85,14 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("refresh", help="rebuild local cache from a complete remote listing")
     commands.add_parser("check", help="check the configured provider connection")
     sync = commands.add_parser("sync", help="send reviewed pending drafts and refresh cache")
+    sync.add_argument("action", nargs="?", choices=["status", "pull", "push", "resolve"])
     sync.add_argument("--approve", action="store_true")
+    sync.add_argument("--kind", choices=[k.value for k in Kind])
+    sync.add_argument("--id", type=UUID)
+    sync.add_argument("--strategy", choices=["remote", "merge"])
+    sync.add_argument("--input", type=Path)
+    sync.add_argument("--etag")
+    sync.add_argument("--dry-run", action="store_true")
     commands.add_parser("pending")
     discard = commands.add_parser("discard", help="discard a local pending draft")
     discard.add_argument("id", type=UUID)
@@ -166,6 +174,9 @@ def parser() -> argparse.ArgumentParser:
     github.add_argument("repository")
     github.add_argument("kind", choices=["issues", "pulls"])
     github.add_argument("number", type=int)
+    from ekm.cli_microsoft import add_microsoft_commands
+
+    add_microsoft_commands(commands)
     return root
 
 
@@ -180,6 +191,7 @@ def auth(config: Config, profile: Profile):
         profile.account_type,
         profile.tenant_id or None,
         scopes=profile.scopes,
+        redirect_uri=profile.redirect_uri,
     )
 
 
@@ -408,13 +420,58 @@ def run(engine: Engine, args) -> None:
     elif command == "check":
         emit(engine.provider.check_connection())
     elif command == "sync":
-        require_active(engine)
-        emit({"destination": engine.profile.model_dump(), "pending": engine.pending()})
-        confirm(args, "Send these pending drafts to the displayed destination?")
-        result = engine.sync(approved=True)
-        emit(result)
-        if result["conflicts"] or result["failed"]:
-            raise ValueError("some pending writes require resolution; see sync results")
+        if args.action == "status":
+            emit(engine.sync_status())
+        elif args.action == "pull":
+            result = engine.pull()
+            emit(result)
+            if result["conflicts"] or result["failed"]:
+                raise ValueError(
+                    "download queue retained; retry sync pull after inspecting the conflict"
+                )
+        elif args.action == "resolve":
+            require_active(engine)
+            if not args.kind or not args.id or not args.strategy:
+                raise ValueError("sync resolve requires --kind, --id and --strategy remote|merge")
+            merged = json.loads(args.input.read_text()) if args.input else None
+            preview = engine.resolve(
+                Kind(args.kind), args.id, strategy=args.strategy, merged=merged, dry_run=True
+            )
+            emit(preview)
+            if args.dry_run:
+                return
+            confirm(
+                args,
+                "Resolve this conflict? The prior local draft remains in the recovery history.",
+            )
+            emit(
+                engine.resolve(
+                    Kind(args.kind),
+                    args.id,
+                    strategy=args.strategy,
+                    merged=merged,
+                    expected_etag=args.etag,
+                    approved=True,
+                )
+            )
+        else:
+            require_active(engine)
+            emit({"destination": engine.profile.model_dump(), "pending": engine.pending()})
+            confirm(args, "Send these pending drafts to the displayed destination?")
+            result = (
+                engine.push(approved=True) if args.action == "push" else engine.sync(approved=True)
+            )
+            emit(result)
+            pull = result.get("pull", {})
+            if (
+                result["conflicts"]
+                or result["failed"]
+                or pull.get("conflicts")
+                or pull.get("failed")
+            ):
+                raise ValueError(
+                    "some pending writes or downloads require resolution; see sync results"
+                )
     elif command == "pending":
         emit(engine.pending())
     elif command == "discard":
@@ -559,7 +616,10 @@ def run(engine: Engine, args) -> None:
         ):
             raise ValueError("restore requires a version-1 EKM export bundle")
         # Validate every record before the first write; keep stable IDs and never overwrite conflicts.
-        records = [engine.prepare(data) for data in bundle["records"]]
+        records = [
+            engine.prepare(verify_integrity(Record.model_validate(data)).model_dump(mode="json"))
+            for data in bundle["records"]
+        ]
         emit(
             {
                 "operation": "restore",
@@ -593,6 +653,11 @@ def main(argv: list[str] | None = None) -> int:
             emit(redact(github_metadata(args.repository, args.kind, args.number)))
             return 0
         config = Config()
+        if args.command in {"auth", "onedrive"}:
+            from ekm.cli_microsoft import dispatch
+
+            dispatch(config, args)
+            return 0
         if args.command == "account":
             account_command(config, args)
             return 0
@@ -609,6 +674,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except (ValueError, OSError, StorageError) as error:
         print("ekm: " + str(redact(str(error))), file=sys.stderr)
+        return 1
+    except sqlite3.Error:
+        print(
+            "ekm: local cache operation failed; retain the private profile directory for recovery before repairing storage",
+            file=sys.stderr,
+        )
         return 1
     finally:
         if engine is not None:

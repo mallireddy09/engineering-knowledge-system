@@ -84,3 +84,25 @@ payload limits and unique indexed identity fields. Export creates new snapshots
 and never overwrites unrelated workbooks. Live endpoints, permissions, app-folder
 behavior, tenant policy and runtime skill invocation remain unverified until
 separate smoke tests are performed with authorized test accounts.
+
+## Personal OneDrive extension
+
+`cli_microsoft.py` adds personal sign-in/storage commands over the existing engine.
+MSAL owns browser PKCE, state validation and the localhost callback; encrypted
+persistence and immutable account identity checks remain shared with the original
+auth implementation. Public application settings load from an ignored `.env`.
+No new company/SharePoint features are part of this phase.
+
+New personal profiles explicitly consent to `User.Read Files.ReadWrite` for the
+top-level `EngineeringKnowledge` folder. A root marker binds application ID,
+hashed account identity and folder ID. Folder shortcuts are rejected for document
+and record operations. Existing AppFolder profiles retain their paths and data.
+Interrupted root creation without a marker requires explicit adoption approval.
+
+`sync.py` stages downloads in SQLite against a fully enumerated ETag snapshot;
+validated partial downloads survive interruptions, while the active index changes
+only after the whole snapshot validates. Explicit conflict resolution checks the
+current ETag and retains the prior local draft in a recovery table. A document
+provenance ledger records EKM-created file IDs, ETags and byte hashes. Updates
+require the tracked remote bytes/version to be unchanged; otherwise they fail
+without replacing user-modified workbooks. There is no automatic Excel merge.

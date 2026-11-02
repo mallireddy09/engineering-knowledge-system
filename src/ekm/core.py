@@ -34,10 +34,19 @@ def make_provider(config: Config, profile: Profile):
         profile.account_type,
         profile.tenant_id or None,
         scopes=profile.scopes,
+        redirect_uri=profile.redirect_uri,
     )
     graph = GraphClient(auth.access_token)
     if profile.account_type == "personal":
-        return OneDriveProvider(graph, root_id=profile.root_id)
+        binding = auth.bound_identity()
+        return OneDriveProvider(
+            graph,
+            root_id=profile.root_id,
+            location=profile.storage_location,
+            app_id=profile.client_id,
+            account_id=binding.get("home_account_id") if binding else None,
+            state_dir=config.profile_dir(profile),
+        )
     return SharePointProvider(graph, profile.site_id, drive_id=profile.drive_id)
 
 
@@ -232,7 +241,7 @@ class Engine:
             self.audit("save", str(record.id), "pending-or-conflict")
             raise
 
-    def sync(self, *, approved: bool = False) -> dict:
+    def push(self, *, approved: bool = False) -> dict:
         if not approved:
             raise ValueError("sync requires explicit approval for pending writes")
         results = {"saved": [], "deleted": [], "conflicts": [], "failed": []}
@@ -258,8 +267,45 @@ class Engine:
                     results["conflicts"].append(str(record.id))
                 except StorageError:
                     results["failed"].append(str(record.id))
-        self.refresh()
         return results
+
+    def sync(self, *, approved: bool = False) -> dict:
+        results = self.push(approved=approved)
+        results["pull"] = self.pull()
+        return results
+
+    def sync_status(self) -> dict:
+        from ekm.sync import Synchronizer
+
+        return Synchronizer(self).status()
+
+    def pull(self) -> dict:
+        from ekm.sync import Synchronizer
+
+        return Synchronizer(self).pull()
+
+    def resolve(
+        self,
+        kind: Kind,
+        record_id: UUID,
+        *,
+        strategy: str,
+        merged: dict | None = None,
+        expected_etag: str | None = None,
+        approved: bool = False,
+        dry_run: bool = False,
+    ) -> dict:
+        from ekm.sync import Synchronizer
+
+        return Synchronizer(self).resolve(
+            kind,
+            record_id,
+            strategy=strategy,
+            merged=merged,
+            expected_etag=expected_etag,
+            approved=approved,
+            dry_run=dry_run,
+        )
 
     def refresh(self) -> int:
         # Only replace the index after a full provider listing succeeds.

@@ -52,10 +52,25 @@ passed with locked dependency installation, tests, lint, format and skill checks
 - Real Claude Code/Codex discovery/invocation and live OneDrive/SharePoint tests
   need a separately configured runtime and authorized test accounts.
 
+## Personal OneDrive implementation phase
+
+Local validation after the personal-account extension: **166 tests passed, 2
+optional live tests skipped, 89% coverage**. Ruff lint/format and both installed
+skill checks passed. The extension reuses the same engine and schemas, adds MSAL
+browser PKCE sign-in, safe session status, owned-root checks, durable staged
+downloads, approved conflict resolution, and version/provenance-guarded document
+updates. `.env` is ignored and untracked; no real account credentials or live
+Microsoft operations were used during implementation. See
+[personal setup and commands](personal-onedrive.md) for the manual sign-in steps.
+
 ## Optional live smoke test
 
 Initialize a dedicated **test** Microsoft profile explicitly before this test.
-The optional test only checks access and lists existing records; it never provisions,
-uploads, edits, or deletes data. Set `EKM_LIVE_PROFILE`, `EKM_LIVE_HOME` and
+The default optional test only checks access and lists existing records. Set
+`EKM_LIVE_PROFILE`, `EKM_LIVE_HOME` and
 `EKM_LIVE_CONFIRM_TEST_ACCOUNT=1`, then run `pytest -m live tests/test_live.py`.
 Do not point it at a production profile. No live tests run by default or in CI.
+The separate personal temporary-file test also requires
+`EKM_LIVE_APPROVE_TEMP_FILE=1`; it creates, reads, and deletes only its own unique
+test file in the already initialized application-owned folder. It never provisions
+storage or selects existing user files for deletion.

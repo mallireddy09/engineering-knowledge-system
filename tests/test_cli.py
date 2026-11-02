@@ -222,3 +222,21 @@ def test_review_preview_and_feedback_never_echo_recognizable_secrets(home, capsy
     assert "SECRET" not in output
     assert "FEEDBACK" not in output
     assert "[REDACTED]" in output
+
+
+def test_sync_status_push_pull_and_corrupt_restore_bundle(home, capsys):
+    from ekm.models import Record
+
+    setup_mock()
+    source = input_file(home, {"title": "Queued knowledge"})
+    assert main(["log", "--input", str(source), "--offline", "--approve"]) == 0
+    capsys.readouterr()
+    assert main(["sync", "status"]) == 0
+    assert len(json.loads(capsys.readouterr().out)["upload_queue"]) == 1
+    assert main(["sync", "push", "--approve"]) == 0
+    assert main(["sync", "pull"]) == 0
+    bad = Record(kind="task", title="Original").sealed().model_dump(mode="json")
+    bad["description"] = "Tampered backup"
+    bundle = input_file(home, {"schema_version": 1, "records": [bad]}, "bad-backup.json")
+    assert main(["restore", "--input", str(bundle), "--approve"]) == 1
+    assert "hash" in capsys.readouterr().err

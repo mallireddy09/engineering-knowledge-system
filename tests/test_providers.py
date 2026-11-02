@@ -268,7 +268,7 @@ def test_onedrive_initialize_reuse_list_export_and_document_upload(tmp_path):
             assert "authorization" not in request.headers
             uploads.append(request.content)
             return httpx.Response(
-                201, json={"id": "document", "webUrl": "https://example.com/journal"}
+                201, json={"id": "document", "eTag": '"1"', "webUrl": "https://example.com/journal"}
             )
         if path == "/me/drive":
             return httpx.Response(200, json={"id": "drive"})
@@ -313,7 +313,7 @@ def test_onedrive_initialize_reuse_list_export_and_document_upload(tmp_path):
     provider.initialize_storage(approved=True)
     assert provider.root_id == "root"
     count = len(creations)
-    assert count == 12
+    assert count == 13
     provider.initialize_storage(approved=True)
     assert len(creations) == count
     assert provider.list_records()[0].record == record

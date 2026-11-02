@@ -1,6 +1,7 @@
 """Graph-only bearer transport and explicitly unauthenticated file transfers."""
 
 import ipaddress
+import logging
 import time
 from collections.abc import Callable
 from urllib.parse import urlsplit
@@ -8,6 +9,8 @@ from urllib.parse import urlsplit
 import httpx
 
 from ekm.providers.base import ConflictError, NotFoundError, StorageError
+
+logger = logging.getLogger(__name__)
 
 
 class GraphHTTPError(StorageError):
@@ -74,12 +77,23 @@ class GraphClient:
             try:
                 response = self.client.send(request, auth=None, follow_redirects=False)
             except httpx.TransportError as error:
+                logger.warning(
+                    "graph_transport_failed", extra={"graph_method": method, "attempt": attempt + 1}
+                )
                 if method in ("GET", "HEAD") and attempt < 3:
                     time.sleep(0.25 * 2**attempt)
                     continue
                 raise StorageError(
                     "Microsoft transport failed; a write may have succeeded. Reconcile by record ID before retrying."
                 ) from error
+            logger.info(
+                "graph_response",
+                extra={
+                    "graph_method": method,
+                    "graph_status": response.status_code,
+                    "attempt": attempt + 1,
+                },
+            )
             if (
                 method in ("GET", "HEAD")
                 and response.status_code in (429, 503, 504)

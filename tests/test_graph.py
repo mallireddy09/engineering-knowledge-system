@@ -28,6 +28,26 @@ def test_graph_validates_all_pagination_origins():
     assert len(calls) == 1
 
 
+def test_graph_structured_logs_exclude_auth_headers_and_urls(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="ekm.microsoft.graph_client")
+    graph = GraphClient(
+        lambda: "never-log-this-token",
+        httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(200, json={"private": "do-not-log-response"})
+            )
+        ),
+    )
+    graph.request("GET", "/me/drive/items/private-path")
+    event = next(r for r in caplog.records if r.name == "ekm.microsoft.graph_client")
+    assert event.graph_method == "GET" and event.graph_status == 200
+    assert "never-log-this-token" not in caplog.text
+    assert "private-path" not in caplog.text
+    assert "do-not-log-response" not in caplog.text
+
+
 def test_retry_reads_only_and_redact_error(monkeypatch):
     monkeypatch.setattr("ekm.microsoft.graph_client.time.sleep", lambda _: None)
     methods = []

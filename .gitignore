@@ -9,6 +9,13 @@ dist/
 build/
 *.egg-info/
 .env
+.env.*
+!.env.example
+token-cache*
+identity.json
+*.msal*
+*.pem
+*.key
 .ekm/
 *.sqlite*
 *.lock.tmp

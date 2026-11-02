@@ -22,6 +22,8 @@ class Profile(BaseModel):
     drive_id: str | None = None
     root_id: str | None = None
     scopes: list[str] | None = None
+    redirect_uri: str = "http://localhost"
+    storage_location: Literal["approot", "drive-root"] = "approot"
 
     @field_validator("name")
     @classmethod
