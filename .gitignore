@@ -16,6 +16,13 @@ identity.json
 *.msal*
 *.pem
 *.key
+credentials.json
+credentials.*.json
+client_secret*.json
+token.json
+token.*.json
+google-token-cache*
+google-identity.json
 .ekm/
 *.sqlite*
 *.lock.tmp

@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 class Profile(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str
-    account_type: Literal["mock", "personal", "company"]
+    account_type: Literal["mock", "personal", "company", "google"]
     client_id: str = ""
     tenant_id: str = ""
     site_id: str = ""
@@ -24,6 +24,10 @@ class Profile(BaseModel):
     scopes: list[str] | None = None
     redirect_uri: str = "http://localhost"
     storage_location: Literal["approot", "drive-root"] = "approot"
+    google_credentials_file: str = "credentials.json"
+    google_env_file: str | None = None
+    spreadsheet_id: str | None = None
+    spreadsheet_url: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -35,7 +39,7 @@ class Profile(BaseModel):
     @model_validator(mode="after")
     def microsoft_requirements(self) -> Profile:
         if self.account_type != "mock" and not self.client_id:
-            raise ValueError("Microsoft profiles require an app client_id")
+            raise ValueError("OAuth profiles require an application client_id")
         if self.account_type == "company" and (not self.tenant_id or not self.site_id):
             raise ValueError("company profiles require tenant_id and site_id")
         if self.account_type == "company" and self.tenant_id in {
@@ -128,6 +132,20 @@ class Config:
                 data["active"] = None
             self._write(data)
         # Retain isolated data for explicit recovery. Tokens must be signed out first by CLI.
+
+    def set_google_dashboard(self, name: str, spreadsheet_id: str) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", spreadsheet_id):
+            raise ValueError("invalid Google spreadsheet ID")
+        name = name.lower()
+        with self.lock:
+            if self.get(name).account_type != "google":
+                raise ValueError("Google dashboard IDs belong only to Google profiles")
+            data = self._read()
+            data["profiles"][name]["spreadsheet_id"] = spreadsheet_id
+            data["profiles"][name]["spreadsheet_url"] = (
+                f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+            )
+            self._write(data)
 
     def profile_dir(self, profile: Profile) -> Path:
         directory = self.home / "profiles" / profile.name

@@ -65,6 +65,13 @@ Microsoft operations were used during implementation. See
 
 ## Optional live smoke test
 
+The Google extension adds **247 passing tests in the full suite, 3 optional live
+tests skipped, and 88% coverage** at local validation. All original 166 tests
+remain present and pass. Ruff lint/format, both agent skill installation checks,
+and wheel/source package builds pass. Google account access remains unverified
+until the user supplies Desktop OAuth credentials and completes browser consent.
+See [Google setup and implementation files](google-workspace.md).
+
 Initialize a dedicated **test** Microsoft profile explicitly before this test.
 The default optional test only checks access and lists existing records. Set
 `EKM_LIVE_PROFILE`, `EKM_LIVE_HOME` and

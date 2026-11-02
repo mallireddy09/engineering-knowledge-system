@@ -67,11 +67,15 @@ def parser() -> argparse.ArgumentParser:
     add = ac.add_parser("add")
     add.add_argument("name")
     add.add_argument(
-        "--type", dest="account_type", choices=["mock", "personal", "company"], required=True
+        "--type",
+        dest="account_type",
+        choices=["mock", "personal", "company", "google"],
+        required=True,
     )
     for option in ("client-id", "tenant-id", "site-id", "drive-id"):
         add.add_argument("--" + option, default=None if option == "drive-id" else "")
     add.add_argument("--scope", action="append", dest="scopes")
+    add.add_argument("--credentials-file", default="credentials.json")
     ac.add_parser("list")
     ac.add_parser("status")
     for action in ("switch", "remove"):
@@ -176,11 +180,22 @@ def parser() -> argparse.ArgumentParser:
     github.add_argument("number", type=int)
     from ekm.cli_microsoft import add_microsoft_commands
 
-    add_microsoft_commands(commands)
+    auth_actions = add_microsoft_commands(commands)
+    from ekm.cli_google import add_google_commands
+
+    add_google_commands(commands, auth_actions)
     return root
 
 
 def auth(config: Config, profile: Profile):
+    if profile.account_type == "google":
+        from ekm.google.auth import GoogleAuth
+
+        return GoogleAuth(
+            config.profile_dir(profile),
+            Path(profile.google_credentials_file),
+            env_file=Path(profile.google_env_file) if profile.google_env_file else None,
+        )
     if profile.account_type == "mock":
         raise ValueError("mock profiles do not need Microsoft authentication")
     from ekm.microsoft.auth import MicrosoftAuth
@@ -205,6 +220,7 @@ def account_command(config: Config, args) -> None:
             site_id=args.site_id,
             drive_id=args.drive_id,
             scopes=args.scopes,
+            google_credentials_file=args.credentials_file,
         )
         config.add(profile)
         emit({"added": profile.name, "active": False, "next": "ekm account switch NAME --approve"})
@@ -588,7 +604,12 @@ def run(engine: Engine, args) -> None:
                 "destination": engine.profile.model_dump(),
             }
         )
-        confirm(args, "Permanently delete this remote record?")
+        confirm(
+            args,
+            "Logically delete this Google record while retaining immutable history?"
+            if engine.profile.account_type == "google"
+            else "Permanently delete this remote record?",
+        )
         engine.delete(Kind(args.kind), args.id, args.etag, approved=True)
         emit({"deleted": str(args.id)})
     elif command in {"review", "quiz"}:
@@ -653,6 +674,13 @@ def main(argv: list[str] | None = None) -> int:
             emit(redact(github_metadata(args.repository, args.kind, args.number)))
             return 0
         config = Config()
+        if args.command in {"provider", "google"} or (
+            args.command == "auth" and args.auth_action == "google"
+        ):
+            from ekm.cli_google import dispatch
+
+            dispatch(config, args)
+            return 0
         if args.command in {"auth", "onedrive"}:
             from ekm.cli_microsoft import dispatch
 

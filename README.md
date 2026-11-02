@@ -84,6 +84,15 @@ vector database is required. Similarity search uses terms rather than embeddings
 
 ## Microsoft and agent setup
 
+Google Drive, native Google Docs journals and Google Sheets dashboards are also
+available as an independent provider. Configure the existing Desktop OAuth app
+using the [Google setup guide](docs/google-workspace.md), then run
+`ekm auth google login --name google --approve` and `ekm google initialize --approve`.
+`ekm provider switch google --approve` and
+`ekm provider switch microsoft --approve` only select destinations; they never
+migrate records. The same logging, search, quiz, report and export commands work
+with either provider, and the same canonical skill serves both coding agents.
+
 For a personal Microsoft account, use the ignored `.env` file in this checkout:
 paste your existing public Application (Client) ID into `MICROSOFT_CLIENT_ID`,
 then run:

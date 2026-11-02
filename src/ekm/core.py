@@ -23,6 +23,31 @@ def make_provider(config: Config, profile: Profile):
 
     if profile.account_type == "mock":
         return MockStorageProvider(config.profile_dir(profile) / "remote")
+    if profile.account_type == "google":
+        from pathlib import Path
+
+        from ekm.google.auth import GoogleAuth
+        from ekm.google.client import GoogleClient
+        from ekm.providers.google_drive import GoogleDriveProvider
+
+        auth = GoogleAuth(
+            config.profile_dir(profile),
+            Path(profile.google_credentials_file),
+            env_file=Path(profile.google_env_file) if profile.google_env_file else None,
+        )
+        identity = auth.bound_identity()
+        if not identity or identity["client_id"] != profile.client_id:
+            raise StorageError(
+                "sign in to the configured Google profile using ekm auth google login"
+            )
+        client = GoogleClient(auth.access_token)
+        return GoogleDriveProvider(
+            client,
+            root_id=profile.root_id,
+            app_id=profile.client_id,
+            account_id=identity["sub"],
+            state_dir=config.profile_dir(profile),
+        )
     from ekm.microsoft.auth import MicrosoftAuth
     from ekm.microsoft.graph_client import GraphClient
     from ekm.providers.onedrive import OneDriveProvider
@@ -77,6 +102,9 @@ class Engine:
         graph = getattr(self._provider, "graph", None)
         if graph is not None:
             graph.close()
+        client = getattr(self._provider, "client", None)
+        if client is not None and client is not graph:
+            client.close()
 
     @property
     def provider(self):

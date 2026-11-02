@@ -16,9 +16,10 @@ from ekm.providers.base import StorageError
 DOCUMENT_FOLDERS = ("journals", "dashboards", "backups", "reports")
 
 
-def add_microsoft_commands(commands) -> None:
+def add_microsoft_commands(commands):
     auth = commands.add_parser("auth", help="personal Microsoft sign-in and safe session status")
     actions = auth.add_subparsers(dest="auth_action", required=True)
+    auth_actions = actions
     login = actions.add_parser("login")
     login.add_argument("--flow", choices=["interactive", "device"], default="interactive")
     login.add_argument(
@@ -50,6 +51,7 @@ def add_microsoft_commands(commands) -> None:
         command.add_argument("--folder", choices=DOCUMENT_FOLDERS, required=True)
         command.add_argument("--name", required=True)
     download.add_argument("--output", type=Path, required=True)
+    return auth_actions
 
 
 def _auth(config: Config, profile: Profile) -> MicrosoftAuth:

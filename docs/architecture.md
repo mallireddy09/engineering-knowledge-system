@@ -28,6 +28,10 @@ flowchart TD
   Auth[Encrypted delegated OAuth / pinned identity] --> Graph
   Graph --> OD[Personal OneDrive app folder JSON]
   Graph --> SP[Company SharePoint Lists]
+  Provider --> Google[Google Drive provider]
+  Google --> GDrive[Owned JSON revision history]
+  Google --> GDocs[Native Google Docs journals]
+  Google --> GSheets[Native Google Sheets snapshot tabs]
   Engine --> Docs[Local Word journal / Excel snapshot]
 ```
 
@@ -106,3 +110,26 @@ current ETag and retains the prior local draft in a recovery table. A document
 provenance ledger records EKM-created file IDs, ETags and byte hashes. Updates
 require the tracked remote bytes/version to be unchanged; otherwise they fail
 without replacing user-modified workbooks. There is no automatic Excel merge.
+
+## Google provider extension
+
+`GoogleDriveProvider` implements the existing storage contract without changing
+shared Record serialization or Microsoft implementations. Google profiles add
+credential/settings paths and the dashboard ID/URL; no client secret or token is
+stored in profile configuration. OAuth uses supported Google libraries, PKCE,
+an ephemeral localhost callback, verified ID tokens and pinned Google subjects,
+with a separate OS-encrypted token cache and redacted SDK diagnostics.
+
+Google Drive JSON records use immutable revision envelopes with deterministic
+logical version tokens. Divergent heads are explicit conflicts; no Drive
+read-then-write version check is presented as atomic concurrency control.
+Generated binary/folder IDs and local operation journals reconcile interrupted
+writes. Native files use private ownership tags and operation journals because
+Docs/Sheets do not support those pre-generated IDs.
+
+Google Docs reuse the existing Word content and append snapshots under an exact
+required revision. Google Sheets reuse the existing Excel model, converting only
+known generated formulas and writing nine newly allocated snapshot tabs in an
+atomic batch. Older/user tabs remain intact. Provider selection only changes
+the active isolated account. Google source APIs, scopes, manual setup and recovery
+details are documented in [the Google guide](google-workspace.md).
